@@ -1,5 +1,6 @@
 import type { LoaderFunction, MetaFunction } from "remix";
-import { useLoaderData, useCatch } from "remix";
+import { Link, Outlet, useLoaderData } from "remix";
+import { useLocation } from 'react-router-dom'
 
 type PostData = {
   post: any,
@@ -7,19 +8,15 @@ type PostData = {
 }
 
 export const loader: LoaderFunction = async({ params }) => {
-  const request = await fetch(`http://localhost:1337/posts?url=${params.url}`)
-  const posts = await request.json() as Array<any>
+  const request = await fetch(`http://localhost:1337/posts?url=${params.url}`);
+  const posts = await request.json() as Array<any>;
 
   if (!posts.length) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const post = posts[0]
-  const requestComments = await fetch(`http://localhost:1337/comments?post.id=${post.id}`)
-
   return {
-    post,
-    comments: await requestComments.json()
+    post: posts[0],
   } as PostData
 }
 
@@ -32,22 +29,18 @@ export const meta: MetaFunction = ({ data = {} }) => {
 };
 
 export default function Posts() {
-  const { post, comments } = useLoaderData<PostData>();
+  const { post } = useLoaderData<PostData>();
+  const location = useLocation();
 
   return (
     <main>
       <h1>{post.title}</h1>
       <h6>Por {post.users_permissions_user.name}</h6>
       <p>{post.content}</p>
-      <section className="remix__page__comment__section">
-        <h2>Comments</h2>
-        {comments.map((comment: any) => (
-          <article>
-            <p>{comment.comment}</p>
-            <h6>Por {comment.users_permissions_user.name}</h6>
-          </article>
-        ))}
-      </section>
+      {!location.pathname.endsWith('/comments') ? (
+        <Link to="comments">Carregar comentários</Link>
+      ) : null}
+      <Outlet />
     </main>
   )
 }
